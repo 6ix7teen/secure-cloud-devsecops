@@ -23,7 +23,8 @@ jobs:
       - name: Scan Repository for Leaked Secrets
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --directory ./ --only-verified
+          path: ./
+          extra_args: --only-verified
 
   iac-security:
     name: "IaC Misconfiguration Scan (Trivy)"
