@@ -12,15 +12,28 @@ provider "aws" {
   region = var.aws_region
 }
 
+# KMS Key with automated 365-day rotation for SOC 2 / ISO 27001
+resource "aws_kms_key" "s3_key" {
+  description             = "Customer managed KMS key for S3 bucket encryption"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = {
+    Environment     = var.environment
+    ComplianceScope = "SOC2-ISO27001"
+    ManagedBy       = "Terraform"
+  }
+}
+
 resource "aws_s3_bucket" "secure_storage" {
   bucket_prefix = "corp-audit-logs-"
   force_destroy = false
 
   tags = {
-    Environment       = var.environment
-    ComplianceScope   = "SOC2-ISO27001"
+    Environment        = var.environment
+    ComplianceScope    = "SOC2-ISO27001"
     DataClassification = "Restricted"
-    ManagedBy         = "Terraform"
+    ManagedBy          = "Terraform"
   }
 }
 
@@ -46,7 +59,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "secure_storage_en
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "aws:kms"
+      kms_master_key_id = aws_kms_key.s3_key.arn
+      sse_algorithm     = "aws:kms"
     }
     bucket_key_enabled = true
   }
