@@ -1,0 +1,66 @@
+name: "DevSecOps Security Pipeline"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  secret-scan:
+    name: "Secrets Detection (TruffleHog)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan Repository for Leaked Secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  iac-security:
+    name: "IaC Misconfiguration Scan (Trivy)"
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy IaC Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "config"
+          scan-ref: "./terraform"
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+
+  terraform-lint:
+    name: "Terraform Validation & Linting"
+    runs-on: ubuntu-latest
+    needs: iac-security
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup HashiCorp Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.3
+
+      - name: Check Canonical Formatting
+        run: terraform -chdir=terraform fmt -check
+
+      - name: Validate Configuration Syntax
+        run: |
+          terraform -chdir=terraform init -backend=false
+          terraform -chdir=terraform validate
