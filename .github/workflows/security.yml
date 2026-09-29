@@ -11,7 +11,7 @@ permissions:
   security-events: write
 
 jobs:
-  secret-scan:
+    secret-scan:
     name: "Secrets Detection (TruffleHog)"
     runs-on: ubuntu-latest
     steps:
@@ -23,10 +23,7 @@ jobs:
       - name: Scan Repository for Leaked Secrets
         uses: trufflesecurity/trufflehog@main
         with:
-          path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --only-verified
+          extra_args: --directory ./ --only-verified
 
   iac-security:
     name: "IaC Misconfiguration Scan (Trivy)"
