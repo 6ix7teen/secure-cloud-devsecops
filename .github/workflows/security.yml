@@ -11,7 +11,7 @@ permissions:
   security-events: write
 
 jobs:
-    secret-scan:
+  secret-scan:
     name: "Secrets Detection (TruffleHog)"
     runs-on: ubuntu-latest
     steps:
